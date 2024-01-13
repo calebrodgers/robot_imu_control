@@ -1,6 +1,0 @@
-[submodule "arduino/Arduino-KalmanFilter"]
-	path = arduino/Arduino-KalmanFilter
-	url = https://github.com/jarzebski/Arduino-KalmanFilter.git
-[submodule "arduino/Arduino-MPU6050"]
-	path = arduino/Arduino-MPU6050
-	url = https://github.com/jarzebski/Arduino-MPU6050

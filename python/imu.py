@@ -34,4 +34,4 @@ def readserial(comport, baudrate):
 
 
 if __name__ == '__main__':
-    readserial('COM3', 115200)
+    readserial('COM3', 9600)

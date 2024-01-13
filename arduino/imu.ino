@@ -1,60 +1,41 @@
-/*
-    Adapted from Kalman Filter Example for MPU6050 by Korneliusz Jarzebski.
-    REQUIRES https://github.com/jarzebski/Arduino-KalmanFilter
-    AND https://github.com/jarzebski/Arduino-MPU6050
-    Read more: http://www.jarzebski.pl/arduino/rozwiazania-i-algorytmy/odczyty-pitch-roll-oraz-filtr-kalmana.html
-    GIT: https://github.com/jarzebski/Arduino-KalmanFilter
-    Web: http://www.jarzebski.pl
-    (c) 2014 by Korneliusz Jarzebski
-*/
+#include <Arduino_LSM9DS1.h> // Available from Library Manager
+#include <MadgwickAHRS.h> // ZIP Included, Source: https://www.arduinolibraries.info/libraries/madgwick, Credit: Sebastian Madgwick. An efficient orientation filter for inertial and inertial/magnetic sensor arrays. April 30, 2010. http://www.x-io.co.uk/open-source-imu-and-ahrs-algorithms/
+#include <Math.h>
 
+float pitchFilteredOld;
+float rollFilteredOld;
+Madgwick filter;
+const float sensorRate = 104.00;
 
-#include <Wire.h>
-#include <MPU6050.h>
-#include <KalmanFilter.h>
-
-MPU6050 mpu;
-
-KalmanFilter kalmanX(0.001, 0.003, 0.03);
-KalmanFilter kalmanY(0.001, 0.003, 0.03);
-
-float accPitch = 0;
-float accRoll = 0;
-
-float kalPitch = 0;
-float kalRoll = 0;
-
-void setup() 
-{
-  Serial.begin(115200);
-
-  // Initialize MPU6050
-  while(!mpu.begin(MPU6050_SCALE_2000DPS, MPU6050_RANGE_2G))
-  {
-    delay(500);
+void setup() {
+  Serial.begin(9600);
+  while (!Serial);
+  if(!IMU.begin())  {
+    Serial.println("Failed to initialize IMU!");
+    while (1);
   }
- 
-  // Calibrate gyroscope. The calibration must be at rest.
-  // If you don't want calibrate, comment this line.
-  mpu.calibrateGyro();
-}
+  filter.begin(sensorRate);
+  Serial.println("Setup complete!");
+}  
+void loop() {
+  float xAcc, yAcc, zAcc;
+  float xGyro, yGyro, zGyro;
+  float roll, pitch, heading;
+  if(IMU.accelerationAvailable() && IMU.gyroscopeAvailable()){
+    IMU.readAcceleration(xAcc, yAcc, zAcc);
+    IMU.readGyroscope(xGyro, yGyro, zGyro); 
+    filter.updateIMU(xGyro, yGyro, zGyro, xAcc, yAcc, zAcc);
+    pitch = -filter.getPitch();
+    roll = filter.getRoll();
+    float pitchFiltered = 0.1 * pitch + 0.9 * pitchFilteredOld; // low pass filter
+    float rollFiltered = 0.1 * roll + 0.9 * rollFilteredOld; // low pass filter
+    
+    Serial.print(pitchFiltered);
+    Serial.print(",");
+    Serial.print(rollFiltered);
+    Serial.println();
 
-void loop()
-{
-  Vector acc = mpu.readNormalizeAccel();
-  Vector gyr = mpu.readNormalizeGyro();
-
-  // Calculate Pitch & Roll from accelerometer (deg)
-  accPitch = -(atan2(acc.XAxis, sqrt(acc.YAxis*acc.YAxis + acc.ZAxis*acc.ZAxis))*180.0)/M_PI;
-  accRoll  = (atan2(acc.YAxis, acc.ZAxis)*180.0)/M_PI;
-
-  // Kalman filter
-  kalPitch = kalmanY.update(accPitch, gyr.YAxis);
-  kalRoll = kalmanX.update(accRoll, gyr.XAxis);
-
-  Serial.print(accPitch);
-  Serial.print(",");
-  Serial.print(accRoll);
-
-  Serial.println();
+    pitchFilteredOld = pitchFiltered;
+    rollFilteredOld = rollFiltered;
+  }
 }
