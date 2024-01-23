@@ -1,8 +1,17 @@
+# IMPORT THESE LIBRARIES
+# ----------------------
 import serial # pip install pyserial
 import roslibpy # pip install roslibpy
 import numpy as np # pip install numpy
 
-client = roslibpy.Ros(host='192.168.0.100', port=9090)
+# ADJUST THESE VALUES AS NEEDED
+# -----------------------------
+# Control Computer IP:
+robot_ip = '192.168.0.100'
+# Arduino Serial Port
+serial_port = 'COM3'
+
+client = roslibpy.Ros(host=robot_ip, port=9090)
 client.run()
 
 talker = roslibpy.Topic(client, '/cmd_vel', 'geometry_msgs/Twist')
@@ -34,4 +43,4 @@ def readserial(comport, baudrate):
 
 
 if __name__ == '__main__':
-    readserial('COM3', 9600)
+    readserial(serial_port, 115200)
